@@ -1,1 +1,6 @@
 *.pyc
+MANIFEST
+xrayplugin-*
+dist
+*.egg-info
+.project
