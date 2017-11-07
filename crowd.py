@@ -698,3 +698,37 @@ class CrowdServer(object):
             return None
 
         return response.json()
+
+
+    def delete_user(self, username, raise_on_error=False):
+        """Delete a user from the directory
+
+        Args:
+            username: The account username
+            raise_on_error: optional (default: False)
+
+        Returns:
+            True: Succeeded
+            False: If unsuccessful
+        """
+        # Populate data with default and mandatory values.
+        # A KeyError means a mandatory value was not provided,
+        # so raise a ValueError indicating bad args.
+        try:
+            data = {
+                    "name": username,
+                   }
+        except KeyError:
+            return ValueError
+
+#         response = self._delete(self.rest_url + "/user",
+#                               data=json.dumps(data))
+        response = self._delete(self.rest_url + "/user?username=%s" % username)
+
+        if response.status_code == 204:
+            return True
+
+        if raise_on_error:
+            raise RuntimeError(response.json()['message'])
+
+        return False
