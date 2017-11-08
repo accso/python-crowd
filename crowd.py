@@ -11,6 +11,14 @@ import json
 import requests
 from lxml import etree
 
+VALID_UPDATE_ATTRIBUTES = [
+    "first-name",
+    "last-name",
+    "display-name",
+    "email",
+    "active"
+]
+
 
 class CrowdServer(object):
     """Crowd server authentication object.
@@ -369,7 +377,7 @@ class CrowdServer(object):
             data[new_k] = v
 
         response = self._post(self.rest_url + "/user",
-                              data=json.dumps(data))
+                             data=json.dumps(data))
 
         if response.status_code == 201:
             return True
@@ -711,19 +719,49 @@ class CrowdServer(object):
             True: Succeeded
             False: If unsuccessful
         """
-        # Populate data with default and mandatory values.
-        # A KeyError means a mandatory value was not provided,
-        # so raise a ValueError indicating bad args.
-        try:
-            data = {
-                    "name": username,
-                   }
-        except KeyError:
-            return ValueError
-
-#         response = self._delete(self.rest_url + "/user",
-#                               data=json.dumps(data))
         response = self._delete(self.rest_url + "/user?username=%s" % username)
+
+        if response.status_code == 204:
+            return True
+
+        if raise_on_error:
+            raise RuntimeError(response.json()['message'])
+
+        return False
+
+
+    def update_user(self, username, raise_on_error=False, **kwargs):
+        """Add a user to the directory
+
+        Args:
+            username: The account username
+            raise_on_error: optional (default: False)
+            **kwargs: key-value pairs:
+                          email: optional
+                          first_name: optional
+                          last_name: optional
+                          display_name: optional
+                          active: optional
+
+        Returns:
+            True: Succeeded
+            False: If unsuccessful
+        """
+        
+        data = {}
+        # Set the username explicitly. It has to match the parameter passed to the
+        # PUT url.
+        data['name'] = username
+
+        # Put values from kwargs into data
+        for k, v in kwargs.items():
+            new_k = k.replace("_", "-")
+            if new_k not in VALID_UPDATE_ATTRIBUTES:
+                raise ValueError("invalid argument %s" % k)
+            data[new_k] = v
+
+        response = self._put(self.rest_url + "/user?username=%s" % username,
+                            data=json.dumps(data))
 
         if response.status_code == 204:
             return True
