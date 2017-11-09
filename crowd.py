@@ -770,3 +770,48 @@ class CrowdServer(object):
             raise RuntimeError(response.json()['message'])
 
         return False
+
+    def delete_user_from_group(self, username, groupname, raise_on_error=False):
+        """Delete a user from the directory
+
+        Args:
+            username: The account username
+            groupname: the name of the group that the used is to be removed from
+            raise_on_error: optional (default: False)
+
+        Returns:
+            True: Succeeded
+            False: If unsuccessful
+        """
+        response = self._delete(self.rest_url + "/user?username=%s&groupname=%s" % (
+            username, groupname))
+
+        if response.status_code == 204:
+            return True
+
+        if raise_on_error:
+            raise RuntimeError(response.json()['message'])
+
+        return False
+
+
+    def get_memberships_of_user(self, username):
+        """Fetches all group memberships of a specific user.
+
+        Returns:
+            array:
+        value: group name
+        """
+
+        response = self._get(self.rest_url + "/user/group/direct?username=%s" % username)
+
+        if not response.ok:
+            return None
+        
+        groups = []
+        json_content = response.json()
+        
+        for group in json_content['groups']:
+            groups.append(group['name'])
+
+        return groups
