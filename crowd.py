@@ -515,6 +515,33 @@ class CrowdServer(object):
 
         return False
 
+    def change_username(self, username, newusername, raise_on_error=False):
+        """Change new password for a user
+
+        Args:
+            username: The account username.
+
+            newusername: The new account username.
+
+            raise_on_error: optional (default: False)
+
+        Returns:
+            True: Succeeded
+            False: If unsuccessful
+        """
+
+        response = self._put(self.rest_url + "/user/rename",
+                             data=json.dumps({"new-name": newusername}),
+                             params={"username": username})
+
+        if response.ok:
+            return True
+
+        if raise_on_error:
+            raise RuntimeError(response.json()['message'])
+
+        return False
+
     def send_password_reset_link(self, username):
         """Sends the user a password reset link (by email)
 
