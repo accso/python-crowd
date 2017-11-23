@@ -739,14 +739,16 @@ class CrowdServer(object):
         """Delete a user from the directory
 
         Args:
-            username: The account username
+            username: the account username of the user to be deleted
             raise_on_error: optional (default: False)
 
         Returns:
             True: Succeeded
             False: If unsuccessful
         """
-        response = self._delete(self.rest_url + "/user?username=%s" % username)
+        response = self._delete(
+            self.rest_url + "/user",
+            params = { "username" : username})
 
         if response.status_code == 204:
             return True
@@ -758,10 +760,10 @@ class CrowdServer(object):
 
 
     def update_user(self, username, raise_on_error=False, **kwargs):
-        """Add a user to the directory
+        """update an existing user in the directory
 
         Args:
-            username: The account username
+            username: the account username
             raise_on_error: optional (default: False)
             **kwargs: key-value pairs:
                           email: optional
@@ -776,8 +778,8 @@ class CrowdServer(object):
         """
         
         data = {}
-        # Set the username explicitly. It has to match the parameter passed to the
-        # PUT url.
+        
+        # Set the username explicitly. It has to match the parameter passed to the PUT url.
         data['name'] = username
 
         # Put values from kwargs into data
@@ -787,8 +789,10 @@ class CrowdServer(object):
                 raise ValueError("invalid argument %s" % k)
             data[new_k] = v
 
-        response = self._put(self.rest_url + "/user?username=%s" % username,
-                            data=json.dumps(data))
+        response = self._put(
+            self.rest_url + "/user",
+            params = { "username" : username },
+            data=json.dumps(data))
 
         if response.status_code == 204:
             return True
@@ -799,19 +803,22 @@ class CrowdServer(object):
         return False
 
     def delete_user_from_group(self, username, groupname, raise_on_error=False):
-        """Delete a user from the directory
+        """Delete a user from a group (remove direct group membership)
 
         Args:
             username: The account username
-            groupname: the name of the group that the used is to be removed from
+            groupname: the name of the group that the user is to be removed from
             raise_on_error: optional (default: False)
 
         Returns:
             True: Succeeded
             False: If unsuccessful
         """
-        response = self._delete(self.rest_url + "/user?username=%s&groupname=%s" % (
-            username, groupname))
+        response = self._delete(
+            self.rest_url + "/group/user/direct",
+            params = { 
+                "username" : username,
+                "groupname" : groupname })
 
         if response.status_code == 204:
             return True
@@ -821,24 +828,35 @@ class CrowdServer(object):
 
         return False
 
+    def add_group(self, groupname, description=None, raise_on_error=False):
+        """Add a group to the directory
 
-    def get_memberships_of_user(self, username):
-        """Fetches all group memberships of a specific user.
-
+        Args:
+            groupname: The groupname
+            description: the description of the group
+            raise_on_error: optional (default: False)
+            
         Returns:
-            array:
-        value: group name
+            True: Succeeded
+            False: If unsuccessful
         """
-
-        response = self._get(self.rest_url + "/user/group/direct?username=%s" % username)
-
-        if not response.ok:
-            return None
         
-        groups = []
-        json_content = response.json()
-        
-        for group in json_content['groups']:
-            groups.append(group['name'])
+        data = {
+            "name": groupname,
+            "type": "GROUP"
+            }
 
-        return groups
+        if description is not None:
+            data["description"] = description
+
+        response = self._post(self.rest_url + "/group",
+                             data=json.dumps(data))
+
+        if response.status_code == 201:
+            return True
+
+        if raise_on_error:
+            raise RuntimeError(response.json()['message'])
+
+        return False
+
